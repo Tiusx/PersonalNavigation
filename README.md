@@ -67,7 +67,7 @@ npm run preview # 预览构建产物
 3. 仓库 `Settings → Pages`，Source 选择 `GitHub Actions`
 4. 推代码自动触发部署，访问 `https://<用户名>.github.io/<仓库名>/`
 
----
+--- 
 
 ## ⚙️ 配置说明
 
