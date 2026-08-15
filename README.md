@@ -40,7 +40,7 @@ npm run preview # 预览构建产物
 1. 将项目推送到一个 **GitHub 公开仓库**
 2. 点击下方按钮，登录 Cloudflare 后按提示导入仓库：
 
-   [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/<你的用户名>/<仓库名>)
+   [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Tiusx/PersonalNavigation)
 
 3. 构建配置（一般会自动识别，若未识别则手动填写）：
    - **Build command**：`npm run build`
@@ -53,7 +53,7 @@ npm run preview # 预览构建产物
 1. 将项目推送到 GitHub / GitLab / Bitbucket 仓库
 2. 点击下方按钮，选择仓库并导入：
 
-   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/<你的用户名>/<仓库名>)
+   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Tiusx/PersonalNavigation)
 
 3. Vercel 会自动识别 Vite 框架，无需额外配置
 4. 若需自定义构建：`Settings → Build` 中确认 **Build Command** 为 `npm run build`、**Output Directory** 为 `dist`
