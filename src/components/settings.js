@@ -6,7 +6,7 @@ import { renderIconField } from "./iconFields.js";
 import { iconHtmlFor } from "../icons.js";
 import { applyThemeValues, DARK_THEME } from "../theme.js";
 import { toast } from "./toast.js";
-import { getCloudConfig, saveCloudConfig, testToken, syncToCloud, syncFromCloud } from "../cloud.js";
+import { getCloudConfig, saveCloudConfig, testToken, checkGistPublic, syncToCloud, syncFromCloud } from "../cloud.js";
 
 export function openSettings() {
   const site = state.data.site;
@@ -379,6 +379,12 @@ export function openSettings() {
       const gistId = $("#cloudGist").value.trim();
       saveCloudConfig({ token, gistId: gistId || "new" });
       toast(`Token 有效（@${login}）`);
+      if (gistId && gistId !== "new") {
+        const isPublic = await checkGistPublic(gistId, token);
+        if (isPublic === false) {
+          toast("警告：该 Gist 是私有的，访客将无法读取。可在 GitHub 上改为公开，或解除绑定后重新创建", "warning");
+        }
+      }
       // 先拉取云端数据，再上传本地，避免新设备覆盖云端数据
       await syncFromCloud();
       await syncToCloud();

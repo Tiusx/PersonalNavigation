@@ -48,6 +48,16 @@ export async function testToken(token) {
   return user.login;
 }
 
+/** 检查 Gist 是否公开（供设置页提示访客可读性） */
+export async function checkGistPublic(gistId, token) {
+  try {
+    const g = await api(`/${gistId}`, { headers: authHeaders(token) });
+    return g.public === true;
+  } catch (e) {
+    return undefined;
+  }
+}
+
 async function fetchGist(gistId, token) {
   const g = await api(`/${gistId}`, { headers: authHeaders(token) });
   const file = g.files && g.files[FILE_NAME];
