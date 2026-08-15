@@ -1,4 +1,4 @@
-// ========== 站点设置（基础信息 / 背景 / 主题 / SEO / 分类 / 搜索引擎 / 数据） ==========
+﻿// ========== 站点设置（基础信息 / 背景 / 主题 / SEO / 分类 / 搜索引擎 / 数据） ==========
 import { state, mutate, resetData, replaceData, setEngine } from "../state.js";
 import { $, $$, escapeHtml, uid } from "../utils/dom.js";
 import { openModal, closeModal } from "./modal.js";
@@ -6,7 +6,7 @@ import { renderIconField } from "./iconFields.js";
 import { iconHtmlFor } from "../icons.js";
 import { applyThemeValues, DARK_THEME } from "../theme.js";
 import { toast } from "./toast.js";
-import { getCloudConfig, saveCloudConfig, testToken, checkGistPublic, syncToCloud, syncFromCloud } from "../cloud.js";
+import { getGithubConfig, saveGithubConfig, testGithub, syncToGithub, pullFromGithub } from "../github.js";
 
 export function openSettings() {
   const site = state.data.site;
@@ -14,8 +14,7 @@ export function openSettings() {
   const seo = state.data.seo || {};
   const theme = state.data.theme || {};
   const footer = site.footer || {};
-  const cloudCfg = getCloudConfig();
-  const gistDisplay = cloudCfg.gistId && cloudCfg.gistId !== "new" ? cloudCfg.gistId : "";
+  const githubCfg = getGithubConfig();
 
   openModal({
     title: "站点设置",
@@ -195,25 +194,25 @@ export function openSettings() {
 
       <div class="settings-panel" id="panel-data">
         <div class="form-group">
-          <label class="form-label">GitHub 云同步（多端共享数据）</label>
-          <input type="password" class="form-input" id="cloudToken" value="${escapeHtml(cloudCfg.token || "")}" placeholder="GitHub Token（仅存本机浏览器，需 gist 权限）" autocomplete="off">
-          <input type="text" class="form-input" id="cloudGist" value="${escapeHtml(cloudCfg.gistId === "new" ? "" : cloudCfg.gistId || "")}" placeholder="Gist ID（留空自动创建公开 Gist）" style="margin-top:8px;">
-          <div class="cloud-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
-            <button type="button" class="btn btn-sm" id="cloudTestBtn">验证并保存</button>
-            <button type="button" class="btn btn-sm" id="cloudSyncBtn">立即同步</button>
-            <button type="button" class="btn btn-sm btn-danger" id="cloudClearBtn">解除绑定</button>
-          </div>
-          <p class="form-hint">所有修改将自动上传到公开 Gist，其他设备/访客打开时自动拉取最新数据。Token 只保存在本机浏览器，不会上传或写入代码；访客无法修改（修改需密码登录，且写入云端需 Token）。</p>
+          <label class="form-label">分享只读站点（让访客看到你的数据）</label>
+          <p class="form-hint"><strong>推荐（无需网络请求，无访问限制）：</strong>点击下方「生成内置数据文件」，将下载的 <code>builtin-data.json</code> 替换项目中的 <code>src/builtin-data.json</code>，然后重新部署。访客打开站点即可直接看到这些数据（内置进页面，零请求），且无法修改。</p>
         </div>
         <div class="form-group">
-          <label class="form-label">分享只读站点（让访客看到你的数据）</label>
-          ${gistDisplay
-            ? `<div class="cloud-actions" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-                <code style="background:#f1f5f9;padding:4px 8px;border-radius:6px;font-size:12px;">VITE_PUBLIC_GIST_ID=${escapeHtml(gistDisplay)}</code>
-                <button type="button" class="btn btn-sm" id="copyGistEnvBtn">复制</button>
-              </div>`
-            : `<p class="form-hint">先在下方绑定 Gist，保存后这里会生成分享配置。</p>`}
-          <p class="form-hint">把上面环境变量配置到托管平台（GitHub Pages / Vercel / Cloudflare 的环境变量设置里）后重新部署，访客打开你的站点即可自动加载你的数据，无需登录即可查看。</p>
+          <button type="button" class="btn" id="downloadBuiltinBtn">📦 生成内置数据文件 (builtin-data.json)</button>
+          <p class="form-hint">下载当前数据 → 替换 <code>src/builtin-data.json</code> → 重新部署，访客将看到这些数据。</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">GitHub 仓库同步（手动上传 / 拉取数据）</label>
+          <input type="password" class="form-input" id="githubToken" value="${escapeHtml(githubCfg.token || "")}" placeholder="GitHub Token（仅存本机浏览器，需仓库写入权限）" autocomplete="off">
+          <input type="text" class="form-input" id="githubRepo" value="${escapeHtml(githubCfg.repo || "")}" placeholder="仓库：owner/repo" style="margin-top:8px;">
+          <input type="text" class="form-input" id="githubPath" value="${escapeHtml(githubCfg.path || "src/builtin-data.json")}" placeholder="数据文件路径（默认 src/builtin-data.json）" style="margin-top:8px;">
+          <div class="cloud-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+            <button type="button" class="btn btn-sm" id="githubTestBtn">验证并保存</button>
+            <button type="button" class="btn btn-sm" id="githubPushBtn">⬆️ 同步到 GitHub</button>
+            <button type="button" class="btn btn-sm" id="githubPullBtn">⬇️ 从 GitHub 拉取</button>
+            <button type="button" class="btn btn-sm btn-danger" id="githubClearBtn">解除绑定</button>
+          </div>
+          <p class="form-hint">配置 Token 和仓库后，点击「同步到 GitHub」把当前数据上传到仓库的 <code>src/builtin-data.json</code>（构建数据文件），仓库收到更新后会自动重新部署，新访客打开即可看到最新数据；换设备/恢复时点「从 GitHub 拉取」。数据改动不会自动上传，需手动点击。Token 只保存在本机浏览器，不会写入代码或仓库。</p>
         </div>
         <div class="form-group">
           <button type="button" class="btn" id="exportDataBtn">📤 导出数据 (JSON)</button>
@@ -362,6 +361,16 @@ export function openSettings() {
 
   // ---------- 数据管理 ----------
   $("#exportDataBtn").addEventListener("click", exportData);
+  $("#downloadBuiltinBtn").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "builtin-data.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("已下载，请替换 src/builtin-data.json 后重新部署");
+  });
   $("#importDataBtn").addEventListener("click", importData);
   $("#resetDataBtn").addEventListener("click", () => {
     if (!confirm("确定恢复默认数据？所有自定义修改将丢失！")) return;
@@ -370,67 +379,50 @@ export function openSettings() {
     closeModal();
   });
 
-  // ---------- GitHub 云同步 ----------
-  $("#cloudTestBtn").addEventListener("click", async () => {
-    const token = $("#cloudToken").value.trim();
+  // ---------- GitHub 仓库同步 ----------
+  $("#githubTestBtn").addEventListener("click", async () => {
+    const token = $("#githubToken").value.trim();
+    const repo = $("#githubRepo").value.trim();
+    const path = $("#githubPath").value.trim() || "src/builtin-data.json";
     if (!token) return toast("请填写 GitHub Token", "warning");
+    if (!repo) return toast("请填写仓库（owner/repo）", "warning");
     try {
-      const login = await testToken(token);
-      const gistId = $("#cloudGist").value.trim();
-      saveCloudConfig({ token, gistId: gistId || "new" });
-      toast(`Token 有效（@${login}）`);
-      if (gistId && gistId !== "new") {
-        const isPublic = await checkGistPublic(gistId, token);
-        if (isPublic === false) {
-          toast("警告：该 Gist 是私有的，访客将无法读取。可在 GitHub 上改为公开，或解除绑定后重新创建", "warning");
-        }
-      }
-      // 先拉取云端数据，再上传本地，避免新设备覆盖云端数据
-      await syncFromCloud();
-      await syncToCloud();
+      const { login, fullName } = await testGithub(token, repo);
+      saveGithubConfig({ token, repo, path });
+      toast(`Token 有效（@${login}），仓库 ${fullName} 可访问`);
     } catch (e) {
       toast("验证失败：" + e.message, "error");
     }
   });
-  $("#cloudSyncBtn").addEventListener("click", async () => {
-    await syncFromCloud();
-    await syncToCloud();
+  $("#githubPushBtn").addEventListener("click", async () => {
+    const cfg = getGithubConfig();
+    if ($("#githubToken").value.trim() && $("#githubRepo").value.trim()) {
+      saveGithubConfig({
+        token: $("#githubToken").value.trim(),
+        repo: $("#githubRepo").value.trim(),
+        path: $("#githubPath").value.trim() || "src/builtin-data.json",
+      });
+    }
+    await syncToGithub();
   });
-  $("#cloudClearBtn").addEventListener("click", () => {
-    saveCloudConfig({ token: "", gistId: "" });
-    $("#cloudToken").value = "";
-    $("#cloudGist").value = "";
-    toast("已解除云端同步绑定");
+  $("#githubPullBtn").addEventListener("click", async () => {
+    const cfg = getGithubConfig();
+    if ($("#githubToken").value.trim() && $("#githubRepo").value.trim()) {
+      saveGithubConfig({
+        token: $("#githubToken").value.trim(),
+        repo: $("#githubRepo").value.trim(),
+        path: $("#githubPath").value.trim() || "src/builtin-data.json",
+      });
+    }
+    await pullFromGithub();
   });
-  const copyGistEnvBtn = $("#copyGistEnvBtn");
-  if (copyGistEnvBtn) {
-    copyGistEnvBtn.addEventListener("click", () => {
-      const gid = getCloudConfig().gistId;
-      const text = `VITE_PUBLIC_GIST_ID=${gid}`;
-      const done = () => toast("已复制：请到部署平台环境变量中配置");
-      if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
-      } else {
-        fallbackCopy(text, done);
-      }
-    });
-  }
-}
-
-function fallbackCopy(text, done) {
-  const ta = document.createElement("textarea");
-  ta.value = text;
-  ta.style.position = "fixed";
-  ta.style.opacity = "0";
-  document.body.appendChild(ta);
-  ta.select();
-  try {
-    document.execCommand("copy");
-    done();
-  } catch (e) {
-    toast("复制失败，请手动复制", "warning");
-  }
-  document.body.removeChild(ta);
+  $("#githubClearBtn").addEventListener("click", () => {
+    saveGithubConfig({ token: "", repo: "", path: "src/builtin-data.json" });
+    $("#githubToken").value = "";
+    $("#githubRepo").value = "";
+    $("#githubPath").value = "src/builtin-data.json";
+    toast("已解除 GitHub 同步绑定");
+  });
 }
 
 function updateBgPreview() {

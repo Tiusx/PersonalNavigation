@@ -82,30 +82,31 @@ npm run preview # 预览构建产物
 
 数据保存在浏览器 `localStorage`，登录状态保存在 `sessionStorage`（关闭标签页失效）。建议定期在「设置 → 数据」中导出 JSON 备份。
 
-### ☁️ 多端数据同步（GitHub Gist，无服务器）
+### 🔄 GitHub 仓库同步（数据打包进项目，多端共享）
 
-三个平台（GitHub Pages / Vercel / Cloudflare Pages）部署的是**独立页面，数据互不相通**。想要多端共享同一份数据，可使用内置的 **GitHub Gist 云同步**（纯前端，无需自建服务器/数据库）：
+三个平台（GitHub Pages / Vercel / Cloudflare Pages）部署的是**独立页面，数据互不相通**。内置 **GitHub 仓库同步**（纯前端，无服务器）：把数据上传到你仓库的构建数据文件 `src/builtin-data.json`，触发重新部署后，**所有访客（包括新访客）都能看到这份最新数据**，其他设备也可拉取同一份数据：
 
-1. 在 GitHub 生成一个 Token：`Settings → Developer settings → Personal access tokens → Tokens (classic)`，勾选 **`gist`** 权限
-2. 打开任一已部署页面的「设置 → 数据 → GitHub 云同步」：
-   - 粘贴 Token，Gist ID 留空
-   - 点击「验证并保存」→ 自动创建一个**公开 Gist** 并上传数据
-3. **每台设备**都打开该页面，填入同一个 Token 和同一个 Gist ID（若 Gist ID 为空，会新建一个——多端同步请在第二台及以后设备填写第一台创建的 Gist ID）
-4. 之后所有修改自动上传，新设备打开页面自动拉取最新数据
+1. 在 GitHub 生成一个 Token：`Settings → Developer settings → Personal access tokens → Tokens (classic)`，勾选 **`repo`** 权限（或 Fine-grained token，勾选仓库 Contents 读 + 写）
+2. 打开任一已部署页面的「设置 → 数据 → GitHub 仓库同步」：
+   - 填写 Token、仓库（`owner/repo`），数据文件路径默认 `src/builtin-data.json`
+   - 点击「验证并保存」
+3. **修改完数据后**，回到「设置 → 数据」，点击「⬆️ 同步到 GitHub」手动上传最新数据到仓库
+4. 仓库收到更新后，部署平台（配置了 push 自动部署）会自动重新构建部署——**新访客打开即可看到你最新设置的数据**
+5. 换设备 / 恢复时，点「⬇️ 从 GitHub 拉取」拉取仓库里的数据
+
+> 数据改动**不会自动上传**，需手动点击「同步到 GitHub」；Token 仅保存在**各设备浏览器的 localStorage**，不会写入代码或仓库。
 
 ### 🌍 分享只读站点（访客查看你的数据，无需登录）
 
-数据默认只在**你自己的浏览器**可见。若想把你的导航分享出去、让任何人打开都能看到你的数据（但无法修改），按以下步骤：
+数据默认只在**你自己的浏览器**可见。若想把你的导航分享出去、让任何人打开都能看到你的数据（但无法修改）：
 
-1. 先按上文完成云同步绑定，得到 Gist ID
-2. 在部署平台（GitHub Actions / Vercel / Cloudflare Pages）的**环境变量**中添加：`VITE_PUBLIC_GIST_ID=<你的 Gist ID>`（设置页「数据 → 分享只读站点」可一键复制该配置）
-3. 重新部署
+1. 在设置里配置好你的导航数据
+2. **方式 A（推荐）**：在「设置 → 数据」点击「⬆️ 同步到 GitHub」，把数据上传到仓库的 `src/builtin-data.json`；重新部署后访客即可看到最新数据（数据内置进页面，**零网络请求、无访问限制**）
+3. **方式 B（手动打包）**：点击「📦 生成内置数据文件」，下载 `builtin-data.json`，用它**替换**项目中的 `src/builtin-data.json`，重新部署
 
-之后任何访客打开你的站点：
-- **自动加载你的数据**（公开 Gist 无需 Token 即可匿名读取）
-- **无法修改**：修改数据需密码登录，且写入云端需要你的 Token（Token 从不分发）；访客本地修改会在刷新后自动被你的数据覆盖
+之后任何访客打开你的站点都会直接看到这些数据——数据已内置在页面里，**不需要任何网络请求，也不受 GitHub 匿名限流影响**。访客无法修改（修改需密码登录，且无你的 Token 无法写入仓库）。
 
-> ⚠️ 安全提示：Token 仅保存在**各设备浏览器的 localStorage**，不会写入代码或仓库；请为 Token 开启过期时间并仅授予 `gist` 权限。若某设备不再使用，可在「设置 → 数据 → 解除绑定」。
+> ⚠️ 安全提示：Token 仅保存在**各设备浏览器的 localStorage**，不会写入代码或仓库；请为 Token 开启过期时间并仅授予所需权限。若某设备不再使用，可在「设置 → 数据 → 解除绑定」。
 
 ---
 

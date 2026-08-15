@@ -2,6 +2,7 @@
 import { config } from "./config.js";
 import { loadJSON, saveJSON } from "./utils/storage.js";
 import { isImageUrl } from "./utils/dom.js";
+import builtinData from "./builtin-data.json";
 
 const DATA_KEY = "nav.data.v2";
 const ENGINE_KEY = "nav.engine";
@@ -44,8 +45,24 @@ function buildDefaultData() {
   };
 }
 
+/** 内置数据（部署时打包，访客无需网络即可看到站长数据），返回副本 */
+export function getBuiltinData() {
+  if (builtinData && Array.isArray(builtinData.categories)) {
+    return JSON.parse(JSON.stringify(builtinData));
+  }
+  return null;
+}
+
 export function initState() {
-  state.data = migrateData(loadJSON(DATA_KEY, null) || buildDefaultData());
+  const local = loadJSON(DATA_KEY, null);
+  const builtin = getBuiltinData();
+  // 有无 Token 决定身份：有 Token 是管理员（多端同步，本地优先）；无 Token 是访客（始终以部署打包的内置数据为准）
+  const hasToken = !!(loadJSON("nav.github", {}) || {}).token;
+  if (hasToken) {
+    state.data = migrateData(local || builtin || buildDefaultData());
+  } else {
+    state.data = migrateData(builtin || local || buildDefaultData());
+  }
   state.engineId = loadJSON(ENGINE_KEY, config.defaultEngine);
   const engines = state.data.searchEngines || config.searchEngines;
   if (!engines.some((e) => e.id === state.engineId)) {
