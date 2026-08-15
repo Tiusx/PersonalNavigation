@@ -12,7 +12,7 @@ import { renderSites } from "./components/siteGrid.js";
 import { renderFooter } from "./components/footer.js";
 import { closeModal } from "./components/modal.js";
 import { isTypingTarget } from "./utils/dom.js";
-import { initCloudSync, syncFromCloud } from "./cloud.js";
+import { initCloudSync, syncFromCloud, pullPublicGist, getCloudConfig } from "./cloud.js";
 
 initState();
 applyTheme();
@@ -20,8 +20,13 @@ applyBackground();
 applySeo();
 
 // 云同步：数据保存自动上传 + 启动时拉取最新
+// 管理员（已配置 Token）走鉴权拉取；访客走公开 Gist 只读拉取
 initCloudSync();
-syncFromCloud();
+if (getCloudConfig().token) {
+  syncFromCloud();
+} else {
+  pullPublicGist();
+}
 
 renderHeader();
 renderSearch();

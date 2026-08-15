@@ -15,6 +15,7 @@ export function openSettings() {
   const theme = state.data.theme || {};
   const footer = site.footer || {};
   const cloudCfg = getCloudConfig();
+  const gistDisplay = cloudCfg.gistId && cloudCfg.gistId !== "new" ? cloudCfg.gistId : "";
 
   openModal({
     title: "站点设置",
@@ -196,13 +197,23 @@ export function openSettings() {
         <div class="form-group">
           <label class="form-label">GitHub 云同步（多端共享数据）</label>
           <input type="password" class="form-input" id="cloudToken" value="${escapeHtml(cloudCfg.token || "")}" placeholder="GitHub Token（仅存本机浏览器，需 gist 权限）" autocomplete="off">
-          <input type="text" class="form-input" id="cloudGist" value="${escapeHtml(cloudCfg.gistId === "new" ? "" : cloudCfg.gistId || "")}" placeholder="Gist ID（留空自动创建私有 Gist）" style="margin-top:8px;">
+          <input type="text" class="form-input" id="cloudGist" value="${escapeHtml(cloudCfg.gistId === "new" ? "" : cloudCfg.gistId || "")}" placeholder="Gist ID（留空自动创建公开 Gist）" style="margin-top:8px;">
           <div class="cloud-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
             <button type="button" class="btn btn-sm" id="cloudTestBtn">验证并保存</button>
             <button type="button" class="btn btn-sm" id="cloudSyncBtn">立即同步</button>
             <button type="button" class="btn btn-sm btn-danger" id="cloudClearBtn">解除绑定</button>
           </div>
-          <p class="form-hint">所有修改将自动上传到私有 Gist，其他设备首次打开时自动拉取最新数据，实现多端同步。Token 只保存在本机浏览器，不会上传或写入代码。</p>
+          <p class="form-hint">所有修改将自动上传到公开 Gist，其他设备/访客打开时自动拉取最新数据。Token 只保存在本机浏览器，不会上传或写入代码；访客无法修改（修改需密码登录，且写入云端需 Token）。</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">分享只读站点（让访客看到你的数据）</label>
+          ${gistDisplay
+            ? `<div class="cloud-actions" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                <code style="background:#f1f5f9;padding:4px 8px;border-radius:6px;font-size:12px;">VITE_PUBLIC_GIST_ID=${escapeHtml(gistDisplay)}</code>
+                <button type="button" class="btn btn-sm" id="copyGistEnvBtn">复制</button>
+              </div>`
+            : `<p class="form-hint">先在下方绑定 Gist，保存后这里会生成分享配置。</p>`}
+          <p class="form-hint">把上面环境变量配置到托管平台（GitHub Pages / Vercel / Cloudflare 的环境变量设置里）后重新部署，访客打开你的站点即可自动加载你的数据，无需登录即可查看。</p>
         </div>
         <div class="form-group">
           <button type="button" class="btn" id="exportDataBtn">📤 导出数据 (JSON)</button>
@@ -385,6 +396,35 @@ export function openSettings() {
     $("#cloudGist").value = "";
     toast("已解除云端同步绑定");
   });
+  const copyGistEnvBtn = $("#copyGistEnvBtn");
+  if (copyGistEnvBtn) {
+    copyGistEnvBtn.addEventListener("click", () => {
+      const gid = getCloudConfig().gistId;
+      const text = `VITE_PUBLIC_GIST_ID=${gid}`;
+      const done = () => toast("已复制：请到部署平台环境变量中配置");
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+      } else {
+        fallbackCopy(text, done);
+      }
+    });
+  }
+}
+
+function fallbackCopy(text, done) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+    done();
+  } catch (e) {
+    toast("复制失败，请手动复制", "warning");
+  }
+  document.body.removeChild(ta);
 }
 
 function updateBgPreview() {

@@ -64,8 +64,8 @@ async function createGist(content, token) {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({
-      description: "Personal Navigation 数据备份",
-      public: false,
+      description: "Personal Navigation 数据备份（公开只读）",
+      public: true,
       files: { [FILE_NAME]: { content } },
     }),
   });
@@ -87,7 +87,7 @@ async function doUpload(cfg, silent) {
     if (cfg.gistId === "new") {
       const id = await createGist(JSON.stringify(data), cfg.token);
       saveCloudConfig({ ...cfg, gistId: id });
-      if (!silent) toast("已创建私有 Gist 并同步");
+      if (!silent) toast("已创建公开 Gist 并同步");
     } else {
       await updateGist(cfg.gistId, JSON.stringify(data), cfg.token);
       if (!silent) toast("已同步到云端");
@@ -135,6 +135,28 @@ export async function syncFromCloud() {
     }
   } catch (e) {
     console.warn("[cloud] 拉取失败:", e);
+  }
+}
+
+/** 部署时注入的公开 Gist ID（构建时通过环境变量 VITE_PUBLIC_GIST_ID 配置） */
+function publicGistId() {
+  return (import.meta.env && import.meta.env.VITE_PUBLIC_GIST_ID) || "";
+}
+
+/** 访客只读拉取站长分享的数据（无需 Token） */
+export async function pullPublicGist() {
+  const gistId = publicGistId();
+  if (!gistId) return;
+  try {
+    const remote = await fetchGist(gistId, "");
+    if (!remote || !remote.categories) return;
+    const localT = state.data?._meta?.updatedAt || 0;
+    const remoteT = remote._meta?.updatedAt || 0;
+    // 访客无写入权限，本地修改无意义，始终以云端数据为准
+    replaceData(remote);
+    if (remoteT > localT) toast("已加载站长分享的数据");
+  } catch (e) {
+    console.warn("[cloud] 公开数据拉取失败:", e);
   }
 }
 
