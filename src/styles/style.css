@@ -491,6 +491,32 @@ textarea {
   color: var(--accent);
 }
 
+/* 拖拽排序 */
+.site-card.dragging {
+  opacity: 0.45;
+  transform: scale(0.98);
+}
+
+.site-card.drag-before::before,
+.site-card.drag-after::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  z-index: 2;
+}
+
+.site-card.drag-before::before {
+  top: -3px;
+}
+
+.site-card.drag-after::after {
+  bottom: -3px;
+}
+
 .site-icon {
   display: inline-flex;
   align-items: center;

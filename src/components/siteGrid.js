@@ -1,8 +1,10 @@
-// ========== 站点卡片网格 ==========
-import { state, currentCategory } from "../state.js";
+// ========== 站点卡片网格（支持拖拽排序） ==========
+import { state, currentCategory, mutate } from "../state.js";
 import { $, escapeHtml } from "../utils/dom.js";
 import { iconHtmlFor } from "../icons.js";
 import { openSiteEditor, deleteSite } from "./siteEditor.js";
+
+let dragIdx = null;
 
 export function renderSites() {
   const grid = $("#sitesGrid");
@@ -17,7 +19,7 @@ export function renderSites() {
   let html = sites
     .map(
       (s, i) => `
-      <a class="site-card" href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" data-idx="${i}">
+      <a class="site-card" href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" data-idx="${i}" draggable="${state.loggedIn}">
         <span class="site-icon">${iconHtmlFor(s)}</span>
         <span class="site-info">
           <span class="site-name">${escapeHtml(s.name)}</span>
@@ -56,4 +58,70 @@ export function renderSites() {
   };
 
   $("#addSiteBtn")?.addEventListener("click", () => openSiteEditor(-1));
+
+  bindDragSort(grid);
+}
+
+/** 拖拽排序：同一分类内调整顺序 */
+function bindDragSort(grid) {
+  const clearIndicators = () => {
+    grid.querySelectorAll(".site-card").forEach((c) => c.classList.remove("dragging", "drag-before", "drag-after"));
+  };
+
+  grid.ondragstart = (e) => {
+    const card = e.target.closest(".site-card");
+    if (!card || card.classList.contains("add-card")) {
+      e.preventDefault();
+      return;
+    }
+    dragIdx = parseInt(card.dataset.idx, 10);
+    card.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    // Firefox 需要 setData 才会开始拖拽
+    e.dataTransfer.setData("text/plain", String(dragIdx));
+  };
+
+  grid.ondragover = (e) => {
+    const card = e.target.closest(".site-card");
+    if (!card || card.classList.contains("add-card") || dragIdx === null) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const rect = card.getBoundingClientRect();
+    const after = e.clientY > rect.top + rect.height / 2;
+    clearIndicators();
+    card.classList.add(after ? "drag-after" : "drag-before");
+  };
+
+  grid.ondrop = (e) => {
+    e.preventDefault();
+    const card = e.target.closest(".site-card");
+    clearIndicators();
+    if (!card || card.classList.contains("add-card") || dragIdx === null) {
+      dragIdx = null;
+      return;
+    }
+    const targetIdx = parseInt(card.dataset.idx, 10);
+    const rect = card.getBoundingClientRect();
+    const after = e.clientY > rect.top + rect.height / 2;
+    if (dragIdx === targetIdx || (dragIdx === targetIdx - 1 && after)) {
+      dragIdx = null;
+      return;
+    }
+    const cat = currentCategory();
+    mutate((data) => {
+      const cur = data.categories.find((c) => c.id === cat.id);
+      if (!cur) return;
+      const sites = cur.sites;
+      const [moved] = sites.splice(dragIdx, 1);
+      let insert = after ? targetIdx + 1 : targetIdx;
+      if (dragIdx < insert) insert -= 1;
+      sites.splice(insert, 0, moved);
+    });
+    dragIdx = null;
+  };
+
+  grid.ondragend = () => {
+    clearIndicators();
+    dragIdx = null;
+  };
 }
