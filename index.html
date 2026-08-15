@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="极简清新的个人上网导航起始页">
+  <meta name="keywords" content="个人导航,快捷导航,上网起始页,网址导航,书签管理">
+  <meta name="theme-color" content="#4f46e5">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="快捷导航">
+  <meta property="og:title" content="快捷导航">
+  <meta property="og:description" content="极简清新的个人上网导航起始页">
+  <meta name="twitter:card" content="summary">
+  <title>快捷导航</title>
+  <link rel="icon" href="./favicon.svg">
+</head>
+<body>
+
+  <!-- 主内容 -->
+  <main class="main">
+    <!-- 顶部工具条：大号时钟 + 设置（JS 渲染） -->
+    <div class="topbar" id="topbar"></div>
+
+    <!-- 搜索区域（JS 渲染） -->
+    <section class="search-section" id="search"></section>
+
+    <!-- 分类标签（JS 渲染） -->
+    <nav class="category-tabs" id="categoryTabs"></nav>
+
+    <!-- 站点卡片网格（JS 渲染） -->
+    <section class="sites-grid" id="sitesGrid"></section>
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <!-- 模态框 / Toast 容器 -->
+  <div class="modal-overlay" id="modalOverlay" hidden></div>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

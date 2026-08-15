@@ -1,0 +1,21 @@
+{
+  "name": "personal-nav",
+  "version": "2.0.0",
+  "description": "极简清新的个人导航起始页，原生 JS + Vite 构建",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  },
+  "dependencies": {
+    "remixicon": "^4.9.1"
+  }
+}
