@@ -6,6 +6,7 @@ import { renderIconField } from "./iconFields.js";
 import { iconHtmlFor } from "../icons.js";
 import { applyThemeValues, DARK_THEME } from "../theme.js";
 import { toast } from "./toast.js";
+import { getCloudConfig, saveCloudConfig, testToken, syncToCloud, syncFromCloud } from "../cloud.js";
 
 export function openSettings() {
   const site = state.data.site;
@@ -13,6 +14,7 @@ export function openSettings() {
   const seo = state.data.seo || {};
   const theme = state.data.theme || {};
   const footer = site.footer || {};
+  const cloudCfg = getCloudConfig();
 
   openModal({
     title: "站点设置",
@@ -192,6 +194,17 @@ export function openSettings() {
 
       <div class="settings-panel" id="panel-data">
         <div class="form-group">
+          <label class="form-label">GitHub 云同步（多端共享数据）</label>
+          <input type="password" class="form-input" id="cloudToken" value="${escapeHtml(cloudCfg.token || "")}" placeholder="GitHub Token（仅存本机浏览器，需 gist 权限）" autocomplete="off">
+          <input type="text" class="form-input" id="cloudGist" value="${escapeHtml(cloudCfg.gistId === "new" ? "" : cloudCfg.gistId || "")}" placeholder="Gist ID（留空自动创建私有 Gist）" style="margin-top:8px;">
+          <div class="cloud-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+            <button type="button" class="btn btn-sm" id="cloudTestBtn">验证并保存</button>
+            <button type="button" class="btn btn-sm" id="cloudSyncBtn">立即同步</button>
+            <button type="button" class="btn btn-sm btn-danger" id="cloudClearBtn">解除绑定</button>
+          </div>
+          <p class="form-hint">所有修改将自动上传到私有 Gist，其他设备首次打开时自动拉取最新数据，实现多端同步。Token 只保存在本机浏览器，不会上传或写入代码。</p>
+        </div>
+        <div class="form-group">
           <button type="button" class="btn" id="exportDataBtn">📤 导出数据 (JSON)</button>
         </div>
         <div class="form-group">
@@ -344,6 +357,33 @@ export function openSettings() {
     resetData();
     toast("已恢复默认数据");
     closeModal();
+  });
+
+  // ---------- GitHub 云同步 ----------
+  $("#cloudTestBtn").addEventListener("click", async () => {
+    const token = $("#cloudToken").value.trim();
+    if (!token) return toast("请填写 GitHub Token", "warning");
+    try {
+      const login = await testToken(token);
+      const gistId = $("#cloudGist").value.trim();
+      saveCloudConfig({ token, gistId: gistId || "new" });
+      toast(`Token 有效（@${login}）`);
+      // 先拉取云端数据，再上传本地，避免新设备覆盖云端数据
+      await syncFromCloud();
+      await syncToCloud();
+    } catch (e) {
+      toast("验证失败：" + e.message, "error");
+    }
+  });
+  $("#cloudSyncBtn").addEventListener("click", async () => {
+    await syncFromCloud();
+    await syncToCloud();
+  });
+  $("#cloudClearBtn").addEventListener("click", () => {
+    saveCloudConfig({ token: "", gistId: "" });
+    $("#cloudToken").value = "";
+    $("#cloudGist").value = "";
+    toast("已解除云端同步绑定");
   });
 }
 

@@ -82,6 +82,19 @@ npm run preview # 预览构建产物
 
 数据保存在浏览器 `localStorage`，登录状态保存在 `sessionStorage`（关闭标签页失效）。建议定期在「设置 → 数据」中导出 JSON 备份。
 
+### ☁️ 多端数据同步（GitHub Gist，无服务器）
+
+三个平台（GitHub Pages / Vercel / Cloudflare Pages）部署的是**独立页面，数据互不相通**。想要多端共享同一份数据，可使用内置的 **GitHub Gist 云同步**（纯前端，无需自建服务器/数据库）：
+
+1. 在 GitHub 生成一个 Token：`Settings → Developer settings → Personal access tokens → Tokens (classic)`，勾选 **`gist`** 权限
+2. 打开任一已部署页面的「设置 → 数据 → GitHub 云同步」：
+   - 粘贴 Token，Gist ID 留空
+   - 点击「验证并保存」→ 自动创建一个**私有 Gist** 并上传数据
+3. **每台设备**都打开该页面，填入同一个 Token 和同一个 Gist ID（若 Gist ID 为空，会新建一个——多端同步请在第二台及以后设备填写第一台创建的 Gist ID）
+4. 之后所有修改自动上传，新设备打开页面自动拉取最新数据
+
+> ⚠️ 安全提示：Token 仅保存在**各设备浏览器的 localStorage**，不会写入代码或仓库；请为 Token 开启过期时间并仅授予 `gist` 权限。若某设备不再使用，可在「设置 → 数据 → 解除绑定」。
+
 ---
 
 ## 📄 License

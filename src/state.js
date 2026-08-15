@@ -15,11 +15,18 @@ export const state = {
 };
 
 const listeners = new Set();
+const saveListeners = new Set();
 
 /** 订阅状态变化，返回取消订阅函数 */
 export function subscribe(fn) {
   listeners.add(fn);
   return () => listeners.delete(fn);
+}
+
+/** 订阅数据保存事件（用于云同步等），返回取消订阅函数 */
+export function onSave(fn) {
+  saveListeners.add(fn);
+  return () => saveListeners.delete(fn);
 }
 
 function emit() {
@@ -47,9 +54,10 @@ export function initState() {
   state.loggedIn = sessionStorage.getItem(AUTH_KEY) === "1";
 }
 
-/** 为旧数据补齐 iconType / seo / theme / avatar / searchEngines 字段 */
+/** 为旧数据补齐 iconType / seo / theme / avatar / searchEngines / _meta 字段 */
 function migrateData(data) {
   if (!data || !Array.isArray(data.categories)) return data;
+  if (!data._meta) data._meta = { updatedAt: "2000-01-01T00:00:00.000Z" };
   if (!data.seo) data.seo = { ...config.seo };
   if (!data.theme) data.theme = { ...config.theme };
   if (data.theme && !("mode" in data.theme)) data.theme.mode = "system";
@@ -76,7 +84,11 @@ function migrateData(data) {
 }
 
 export function save() {
+  // 记录数据更新时间，用于云同步冲突判断
+  state.data._meta = state.data._meta || {};
+  state.data._meta.updatedAt = new Date().toISOString();
   saveJSON(DATA_KEY, state.data);
+  saveListeners.forEach((fn) => fn());
 }
 
 export function setEngine(id) {
