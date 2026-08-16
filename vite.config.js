@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 /**
  * 构建时从 src/builtin-data.json 读取 site/seo 配置，注入到 index.html。
@@ -12,9 +12,8 @@ import { fileURLToPath } from "node:url";
 function injectSeoPlugin() {
   let builtin = null;
   try {
-    builtin = JSON.parse(
-      readFileSync(fileURLToPath(new URL("./src/builtin-data.json", import.meta.url)), "utf-8")
-    );
+    // Vite 配置始终从项目根目录加载，process.cwd() 即项目根
+    builtin = JSON.parse(readFileSync(resolve(process.cwd(), "src/builtin-data.json"), "utf-8"));
   } catch (e) {
     console.warn("[seo] 无法读取 src/builtin-data.json，使用 index.html 默认 SEO:", e.message);
   }
