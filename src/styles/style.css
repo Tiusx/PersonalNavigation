@@ -541,6 +541,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
   padding: 14px 16px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1399,6 +1400,14 @@ textarea {
 
 /* ---------- 响应式 ---------- */
 @media (max-width: 768px) {
+  .topbar {
+    justify-content: flex-start;
+  }
+
+  .clock {
+    align-items: flex-start;
+  }
+
   .topbar-actions {
     top: 12px;
     right: 12px;
