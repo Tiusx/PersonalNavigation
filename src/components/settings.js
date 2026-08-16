@@ -6,6 +6,7 @@ import { renderIconField } from "./iconFields.js";
 import { iconHtmlFor } from "../icons.js";
 import { applyThemeValues, DARK_THEME } from "../theme.js";
 import { toast } from "./toast.js";
+import { showConfirm } from "./confirm.js";
 import { getGithubConfig, saveGithubConfig, testGithub, syncToGithub, pullFromGithub } from "../github.js";
 
 export function openSettings() {
@@ -194,37 +195,28 @@ export function openSettings() {
 
       <div class="settings-panel" id="panel-data">
         <div class="form-group">
-          <label class="form-label">分享只读站点（让访客看到你的数据）</label>
-          <p class="form-hint"><strong>推荐（无需网络请求，无访问限制）：</strong>点击下方「生成内置数据文件」，将下载的 <code>builtin-data.json</code> 替换项目中的 <code>src/builtin-data.json</code>，然后重新部署。访客打开站点即可直接看到这些数据（内置进页面，零请求），且无法修改。</p>
-        </div>
-        <div class="form-group">
-          <button type="button" class="btn" id="downloadBuiltinBtn">📦 生成内置数据文件 (builtin-data.json)</button>
-          <p class="form-hint">下载当前数据 → 替换 <code>src/builtin-data.json</code> → 重新部署，访客将看到这些数据。</p>
-        </div>
-        <div class="form-group">
-          <label class="form-label">GitHub 仓库同步（手动上传 / 拉取数据）</label>
-          <input type="password" class="form-input" id="githubToken" value="${escapeHtml(githubCfg.token || "")}" placeholder="GitHub Token（仅存本机浏览器，需仓库写入权限）" autocomplete="off">
-          <input type="text" class="form-input" id="githubRepo" value="${escapeHtml(githubCfg.repo || "")}" placeholder="仓库：owner/repo" style="margin-top:8px;">
-          <input type="text" class="form-input" id="githubPath" value="${escapeHtml(githubCfg.path || "src/builtin-data.json")}" placeholder="数据文件路径（默认 src/builtin-data.json）" style="margin-top:8px;">
-          <div class="cloud-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
-            <button type="button" class="btn btn-sm" id="githubTestBtn">验证并保存</button>
-            <button type="button" class="btn btn-sm" id="githubPushBtn">⬆️ 同步到 GitHub</button>
-            <button type="button" class="btn btn-sm" id="githubPullBtn">⬇️ 从 GitHub 拉取</button>
-            <button type="button" class="btn btn-sm btn-danger" id="githubClearBtn">解除绑定</button>
-          </div>
-          <p class="form-hint">配置 Token 和仓库后，点击「同步到 GitHub」把当前数据上传到仓库的 <code>src/builtin-data.json</code>（构建数据文件），仓库收到更新后会自动重新部署，新访客打开即可看到最新数据；换设备/恢复时点「从 GitHub 拉取」。数据改动不会自动上传，需手动点击。Token 只保存在本机浏览器，不会写入代码或仓库。</p>
-        </div>
-        <div class="form-group">
           <button type="button" class="btn" id="exportDataBtn">📤 导出数据 (JSON)</button>
+          <button type="button" class="btn" id="downloadBuiltinBtn" style="margin-left:8px;">📦 生成 builtin-data.json</button>
         </div>
         <div class="form-group">
-          <label class="form-label">导入数据 (JSON)</label>
-          <textarea class="form-textarea" id="importDataText" placeholder="粘贴 JSON 数据..."></textarea>
+          <label class="form-label">导入数据</label>
+          <textarea class="form-textarea" id="importDataText" rows="4" placeholder="粘贴 JSON 数据..."></textarea>
           <button type="button" class="btn btn-sm" id="importDataBtn" style="margin-top:8px;">导入</button>
         </div>
         <div class="form-group">
+          <label class="form-label">GitHub 同步（可选）</label>
+          <input type="password" class="form-input" id="githubToken" value="${escapeHtml(githubCfg.token || "")}" placeholder="GitHub Token" autocomplete="off">
+          <input type="text" class="form-input" id="githubRepo" value="${escapeHtml(githubCfg.repo || "")}" placeholder="owner/repo" style="margin-top:8px;">
+          <input type="hidden" id="githubPath" value="${escapeHtml(githubCfg.path || "src/builtin-data.json")}">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+            <button type="button" class="btn btn-sm" id="githubTestBtn">保存</button>
+            <button type="button" class="btn btn-sm" id="githubPushBtn">⬆ 同步</button>
+            <button type="button" class="btn btn-sm" id="githubPullBtn">⬇ 拉取</button>
+            <button type="button" class="btn btn-sm btn-danger" id="githubClearBtn">解除</button>
+          </div>
+        </div>
+        <div class="form-group" style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
           <button type="button" class="btn btn-danger" id="resetDataBtn">🔄 恢复默认数据</button>
-          <p class="form-hint">将清除所有自定义修改，恢复到初始状态</p>
         </div>
       </div>
     `,
@@ -373,10 +365,18 @@ export function openSettings() {
   });
   $("#importDataBtn").addEventListener("click", importData);
   $("#resetDataBtn").addEventListener("click", () => {
-    if (!confirm("确定恢复默认数据？所有自定义修改将丢失！")) return;
-    resetData();
-    toast("已恢复默认数据");
-    closeModal();
+    showConfirm({
+      title: "恢复默认数据",
+      message: "确定恢复默认数据？所有自定义修改将丢失！",
+      confirmText: "恢复",
+      danger: true,
+      onConfirm: () => {
+        resetData();
+        toast("已恢复默认数据");
+        setTimeout(closeModal, 0);
+        return true;
+      },
+    });
   });
 
   // ---------- GitHub 仓库同步 ----------
@@ -439,10 +439,37 @@ function updateBgPreview() {
 }
 
 function addCategory() {
-  const name = prompt("请输入分类名称：");
-  if (!name || !name.trim()) return;
-  mutate((data) => data.categories.push({ id: uid(), name: name.trim(), icon: "📁", iconType: "emoji", sites: [] }));
-  renderCategoryManager();
+  let field;
+  openModal({
+    title: "添加分类",
+    stack: true,
+    body: `
+      <div class="form-group">
+        <label class="form-label">分类名称 *</label>
+        <input type="text" class="form-input" id="newCatName" placeholder="例如：工具" maxlength="20">
+      </div>
+      <div class="form-group">
+        <label class="form-label">分类图标</label>
+        <div class="icon-field" id="newCatIcon"></div>
+      </div>
+      <p class="form-hint">名称必填；图标可留空，将显示名称首字。</p>
+    `,
+    confirmText: "添加",
+    onConfirm: () => {
+      const name = $("#newCatName").value.trim();
+      if (!name) {
+        toast("请填写分类名称", "error");
+        return false;
+      }
+      const { icon, iconType } = field.getValue();
+      mutate((data) => data.categories.push({ id: uid(), name, icon, iconType, sites: [] }));
+      toast("分类已添加");
+      renderCategoryManager();
+      return true;
+    },
+  });
+  field = renderIconField($("#newCatIcon"), { icon: "", iconType: "svg" });
+  setTimeout(() => $("#newCatName")?.focus(), 60);
 }
 
 function openCategoryIconPicker(i) {
@@ -476,18 +503,18 @@ function renderCategoryManager() {
   list.innerHTML = cats
     .map(
       (c, i) => `
-      <div class="form-row cat-row">
+      <div class="cat-row">
         <button type="button" class="cat-icon-btn" data-cat-icon-edit="${i}" title="点击选择图标">${iconHtmlFor(c)}</button>
-        <input type="text" class="form-input" value="${escapeHtml(c.name)}" data-cat-name="${i}" title="分类名称">
+        <input type="text" class="form-input cat-name-input" value="${escapeHtml(c.name)}" data-cat-name="${i}" title="分类名称" maxlength="20">
         <button type="button" class="btn btn-sm btn-danger" data-cat-del="${i}">删除</button>
       </div>`
     )
     .join("");
 
-  $$("[data-cat-icon-edit]").forEach((btn) => {
+  $$("[data-cat-icon-edit]", list).forEach((btn) => {
     btn.addEventListener("click", () => openCategoryIconPicker(parseInt(btn.dataset.catIconEdit, 10)));
   });
-  $$("[data-cat-name]").forEach((input) => {
+  $$("[data-cat-name]", list).forEach((input) => {
     input.addEventListener("input", (e) => {
       const i = parseInt(e.target.dataset.catName, 10);
       mutate((data) => {
@@ -495,15 +522,24 @@ function renderCategoryManager() {
       });
     });
   });
-  $$("[data-cat-del]").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const i = parseInt(e.target.dataset.catDel, 10);
+  $$("[data-cat-del]", list).forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const i = parseInt(btn.dataset.catDel, 10);
       const cat = state.data.categories[i];
-      if (!confirm(`确定删除分类「${cat.name}」？该分类下的 ${cat.sites.length} 个站点也会被删除。`)) return;
-      mutate((data) => {
-        data.categories.splice(i, 1);
+      if (!cat) return;
+      showConfirm({
+        title: "删除分类",
+        message: `确定删除分类「${cat.name}」？该分类下的 ${cat.sites.length} 个站点也会被删除。`,
+        confirmText: "删除",
+        danger: true,
+        onConfirm: () => {
+          mutate((data) => {
+            data.categories.splice(i, 1);
+          });
+          renderCategoryManager();
+          return true;
+        },
       });
-      renderCategoryManager();
     });
   });
 }
@@ -511,7 +547,7 @@ function renderCategoryManager() {
 // ---------- 搜索引擎管理 ----------
 function openEngineEditor(idx) {
   const engines = state.data.searchEngines;
-  const eng = idx >= 0 ? engines[idx] : { name: "", url: "", icon: "", iconType: "emoji" };
+  const eng = idx >= 0 ? engines[idx] : { name: "", url: "", icon: "", iconType: "svg" };
   let field;
   openModal({
     title: idx >= 0 ? "编辑搜索引擎" : "添加搜索引擎",
@@ -562,13 +598,22 @@ function deleteEngine(i) {
     return;
   }
   const eng = engines[i];
-  if (!confirm(`确定删除「${eng.name}」吗？`)) return;
-  const wasCurrent = state.engineId === eng.id;
-  mutate((data) => {
-    data.searchEngines.splice(i, 1);
+  if (!eng) return;
+  showConfirm({
+    title: "删除搜索引擎",
+    message: `确定删除「${eng.name}」吗？`,
+    confirmText: "删除",
+    danger: true,
+    onConfirm: () => {
+      const wasCurrent = state.engineId === eng.id;
+      mutate((data) => {
+        data.searchEngines.splice(i, 1);
+      });
+      if (wasCurrent) setEngine(state.data.searchEngines[0]?.id || "");
+      renderEngineManager();
+      return true;
+    },
   });
-  if (wasCurrent) setEngine(state.data.searchEngines[0]?.id || "");
-  renderEngineManager();
 }
 
 function renderEngineManager() {

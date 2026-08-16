@@ -2,6 +2,7 @@
 import { state, replaceData } from "./state.js";
 import { loadJSON, saveJSON } from "./utils/storage.js";
 import { toast } from "./components/toast.js";
+import { confirmAsync } from "./components/confirm.js";
 
 const GH_KEY = "nav.github";
 const GH_API = "https://api.github.com";
@@ -100,8 +101,13 @@ export async function syncToGithub() {
         const remote = decodeData(fileInfo.content);
         const rt = remote._meta?.updatedAt || 0;
         const lt = data._meta?.updatedAt || 0;
-        if (rt > lt && !confirm("仓库中的数据比当前更新，上传会覆盖远端修改，仍要继续？")) {
-          return false;
+        if (rt > lt) {
+          const ok = await confirmAsync("仓库中的数据比当前更新，上传会覆盖远端修改，仍要继续？", {
+            title: "确认同步",
+            confirmText: "仍要继续",
+            danger: true,
+          });
+          if (!ok) return false;
         }
       } catch (e) {
         /* 远程不是有效数据，直接覆盖 */

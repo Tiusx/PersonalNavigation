@@ -91,11 +91,25 @@ function migrateData(data) {
     if (!cat.iconType) {
       cat.iconType = isImageUrl(cat.icon || "") ? "image" : "emoji";
     }
+    if (cat.icon && cat.icon.startsWith("svg:") || cat.icon && cat.icon.startsWith("st:")) {
+      cat.iconType = "svg";
+    }
     (cat.sites || []).forEach((site) => {
       if (!site.iconType) {
         site.iconType = isImageUrl(site.icon || "") ? "image" : "emoji";
       }
+      if (site.icon && site.icon.startsWith("svg:") || site.icon && site.icon.startsWith("st:")) {
+        site.iconType = "svg";
+      }
     });
+  });
+  (data.searchEngines || []).forEach((engine) => {
+    if (!engine.iconType) {
+      engine.iconType = isImageUrl(engine.icon || "") ? "image" : "emoji";
+    }
+    if (engine.icon && engine.icon.startsWith("svg:") || engine.icon && engine.icon.startsWith("st:")) {
+      engine.iconType = "svg";
+    }
   });
   return data;
 }

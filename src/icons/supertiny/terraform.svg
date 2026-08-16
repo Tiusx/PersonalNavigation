@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   id="LOGOS"
+   viewBox="0 0 61.5 69.879997"
+   version="1.1"
+   width="61.5"
+   height="69.879997"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <style
+       id="style1">.cls-1{fill:#7b42bc;fill-rule:evenodd;}</style>
+  </defs>
+  <polygon
+     class="cls-1"
+     points="70.72,64.58 51.62,53.55 51.62,31.49 70.72,42.52 "
+     id="polygon9"
+     transform="translate(-30.42,-19.18)" />
+  <polygon
+     class="cls-1"
+     points="91.92,53.55 91.92,31.49 72.81,42.52 72.81,64.58 "
+     id="polygon10"
+     transform="translate(-30.42,-19.18)" />
+  <polygon
+     class="cls-1"
+     points="49.52,52.27 49.52,30.21 30.42,19.18 30.42,41.24 "
+     id="polygon11"
+     transform="translate(-30.42,-19.18)" />
+  <polygon
+     class="cls-1"
+     points="70.72,67.14 70.72,67 51.62,55.97 51.62,78.03 70.72,89.06 "
+     id="polygon12"
+     transform="translate(-30.42,-19.18)" />
+</svg>

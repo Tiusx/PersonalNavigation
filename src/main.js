@@ -1,6 +1,5 @@
 // ========== 应用入口 ==========
 import "./styles/style.css";
-import "./styles/remixicon.css";
 import { initState, subscribe } from "./state.js";
 import { applyBackground } from "./background.js";
 import { applyTheme } from "./theme.js";

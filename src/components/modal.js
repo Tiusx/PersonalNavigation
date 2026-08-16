@@ -7,10 +7,11 @@ function animateClose(overlay) {
 
 /**
  * 打开模态框
- * @param {{ title: string, body: string, onConfirm?: () => boolean|void, confirmText?: string, size?: string, stack?: boolean }} opts
+ * @param {{ title: string, body: string, onConfirm?: () => boolean|void, confirmText?: string, size?: string, stack?: boolean, onCancel?: () => void }} opts
  *  - stack: true 时叠加在已有弹窗之上（如弹窗内再开子弹窗），false 时先关闭已有弹窗
+ *  - onCancel: 点击取消 / 关闭 / 遮罩时触发
  */
-export function openModal({ title, body, onConfirm, confirmText = "确定", size = "", stack = false } = {}) {
+export function openModal({ title, body, onConfirm, onCancel, confirmText = "确定", size = "", stack = false } = {}) {
   if (!stack) {
     document.querySelectorAll(".modal-overlay.show").forEach(animateClose);
   }
@@ -35,13 +36,22 @@ export function openModal({ title, body, onConfirm, confirmText = "确定", size
 
   const close = () => animateClose(overlay);
 
-  overlay.querySelector('[data-action="close"]').addEventListener("click", close);
-  overlay.querySelector('[data-action="cancel"]').addEventListener("click", close);
+  overlay.querySelector('[data-action="close"]').addEventListener("click", () => {
+    onCancel?.();
+    close();
+  });
+  overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => {
+    onCancel?.();
+    close();
+  });
   overlay.querySelector('[data-action="confirm"]').addEventListener("click", () => {
     if (onConfirm?.() !== false) close();
   });
   overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) close();
+    if (e.target === overlay) {
+      onCancel?.();
+      close();
+    }
   });
 
   // 支持回车确认
